@@ -1,0 +1,24 @@
+{
+  "name": "douban-novel-spider",
+  "version": "1.0.0",
+  "description": "",
+  "main": "index.js",
+  "dependencies": {
+    "async": "^2.1.5",
+    "cheerio": "^0.22.0",
+    "co": "^4.6.0",
+    "mongoose": "^4.8.6",
+    "open": "0.0.5",
+    "request": "^2.80.0"
+  },
+  "devDependencies": {},
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "keywords": [
+    "spider",
+    "nodejs"
+  ],
+  "author": "gwl002",
+  "license": "ISC"
+}
