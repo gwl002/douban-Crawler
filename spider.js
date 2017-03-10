@@ -144,6 +144,9 @@ function get_pageTotal(){
 			}else{
 				var $=cheerio.load(body);
  				var pageTotal=$(".pagination ul").children().last().prev().text();
+ 				if(!pageTotal){
+ 					reject(new Error("ip  被封掉了吧！"))
+ 				}
 				resolve(pageTotal);
 			}
 		})
@@ -153,31 +156,35 @@ function get_pageTotal(){
 //提取每页小说信息 
 function extract_novelInfo(html){
 	var $=cheerio.load(html);
-	var items=$(".item")
+	var items=$(".item");
+	var books=[];
 	items.map(function(i,item){
 		var title,price,author,category,rating,desc,book;
 		title=$(item).find($(".title")).text()||"Null";
-		price=$(item).find($(".price-tag")).text().replace(/[^\d\.]/g,"")||"Null";
+		price=$(item).find($(".price-tag")).text().replace(/[^\d\.]/g,"")||0;
+		if($(item).find($(".price-tag")).hasClass("discount")){
+			price=$(item).find($(".discount-price")).text().replace(/[^\d\.]/g,"")||0;
+		}else{
+			price=$(item).find($(".price-tag")).text().replace(/[^\d\.]/g,"")||0;
+		}
+
+
 		author=$(item).find($(".author-item")).text()||"Null";
 		category=$(item).find($("span[itemprop='genre']")).text().split("/")[1]||"Null";
-		rating=$(item).find($(".rating-average")).text()||"Null";
+		rating=$(item).find($(".rating-average")).text()||0;
 		desc=$(item).find($(".article-desc-brief")).text()||"Null";
-		book=new Book({
+		book={
 			title:title,
 			price:price,
 			author:author,
 			category:category,
 			rating:rating,
 			desc:desc
-		}) ;
-		book.save(function(err,doc){
-			if(err){
-				console.log(err)
-			}else{
-				console.log(doc)
-			}
-		})
+		};
+		console.log(book.title)
+		books.push(book);
 	})
+	return books;
 
 }
 
@@ -187,17 +194,25 @@ function novels_spider(pageTotal){
 	for(var i=0;i<pageTotal;i++){
 		urls.push(NOVEL_URL+20*i);
 	} 
-	async.mapLimit(urls,10,function(url,callback){
+	async.mapLimit(urls,5
+		,function(url,callback){
 		req.get(url,function(err,res,body){
 			if(err){
 				console.log(err);
 			}else{
-				extract_novelInfo(body);
-				callback(null,1);
+				var books=extract_novelInfo(body);
+				Book.create(books,function(err,docs){
+					if(err){
+						console.log(err);
+						callback(null,err);
+					}else{
+						callback(null,docs);
+					}
+				});
 			}
 		})
 	},function(err,result){
-		console.log("爬去结束...，一共爬完"+result.length+"个页面。");
+		console.log("爬取结束...，一共爬完"+result.length+"个页面。");
 	})
 }
 
@@ -208,20 +223,49 @@ db.on("error",function(err){
 	console.log(err);
 })
 db.once("open",function(){
-	Book.remove();
 	console.log("数据库连接成功...");
 })
 
-get_captcha()
-.then(compose_loginInfo)
-.then(login)
-//.then(get_userInfo)
-//.then(function(user){
-//	console.log(user.nick+"常居"+user.address+"，于"+user.joinTime+"注册豆瓣，ID号为"+user.id+"。")
-//})
-.then(get_pageTotal)
-.then(function(pageTotal){
-	console.log("开始爬取,一共有"+pageTotal+"个页面...")
-	novels_spider(pageTotal);
+function main(){
+	Book.remove({},function(err){
+		if(err){
+			console.log(err)
+		}else{
+			get_captcha()
+			.then(compose_loginInfo)
+			.then(login)
+		//.then(get_userInfo)
+		//.then(function(user){
+		//	console.log(user.nick+"常居"+user.address+"，于"+user.joinTime+"注册豆瓣，ID号为"+user.id+"。")
+		//})
+			.then(get_pageTotal)
+			.then(function(pageTotal){
+				console.log("开始爬取,一共有"+pageTotal+"个页面...")
+				novels_spider(pageTotal);
+			})
+			.catch(function(err){console.log(err)})
+		}
+	})
+}
+
+main();
+
+
+
+
+process.on("uncaughtException",function(err){
+	console.log(err.stack);
 })
-.catch(function(err){console.log(err)})
+
+
+
+
+
+
+
+
+
+
+
+
+

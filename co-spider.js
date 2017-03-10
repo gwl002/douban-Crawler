@@ -123,6 +123,7 @@ function get_userInfo(){
 			if(err){
 				reject(err);
 			}else{
+				console.log(body);
 				var userInfo=extract_userInfo(body)
 				resolve(userInfo);
 			}
