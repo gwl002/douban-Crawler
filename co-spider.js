@@ -18,8 +18,8 @@ var req=request.defaults({strictSSL:false,jar:j,headers:headers})
 
 //登陆信息
 var LOGIN_INFO={
-	form_email:"gong.wenlan@163.com",
-	form_password:"235813gwl002",
+	form_email:"your-email-address",
+	form_password:"your-password",
 	login:"登陆",
 	redir:"https://www.douban.com",
 	source:"None"
